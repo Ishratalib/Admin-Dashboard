@@ -68,5 +68,3 @@ The dashboard is designed to work across different screen sizes, providing a cle
 ## 👩‍💻 Author
 
 **Ishrat Talib**
-
-GitHub: https://github.com/Ishratalib
