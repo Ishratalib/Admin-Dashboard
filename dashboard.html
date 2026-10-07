@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <!-- Tailwind v4 Play CDN Link -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <script>
+        // ROUTE PROTECTION: Runs immediately before page elements load
+        const storedUser = localStorage.getItem('registeredUser');
+        if (!storedUser) {
+            window.location.href = 'index.html';
+        } else {
+            const userObj = JSON.parse(storedUser);
+            if (userObj.isLoggedIn !== true) {
+                window.location.href = 'index.html';
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-100 flex flex-col min-h-screen">
+
+    <!-- Top Header Navigation -->
+    <header class="bg-white px-6 py-4 flex justify-between items-center shadow-sm border-b border-slate-200 relative">
+        <div class="text-xl font-bold text-blue-600">Admin Control Panel</div>
+        
+        <!-- Top Right Avatar Area -->
+        <div class="relative">
+            <!-- Initial letter will be injected here via JS -->
+            <div id="avatarBtn" class="w-10 h-10 bg-blue-600 text-white flex items-center justify-center rounded-full font-bold text-lg cursor-pointer hover:bg-blue-700 transition select-none uppercase">
+                A
+            </div>
+            <!-- Dropdown Menu Type Open -->
+            <div id="avatarDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-slate-200 py-1 z-50">
+                <button id="logoutBtn" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-slate-100 font-semibold cursor-pointer">
+                    🚪 Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar and Main Panel Flex Layout -->
+    <div class="flex flex-1">
+        <!-- Left Sidebar Section -->
+        <aside class="w-64 bg-slate-800 text-gray-100 p-4">
+            <ul class="space-y-1">
+                <li class="p-3 bg-slate-700 rounded-md border-l-4 border-blue-500 font-semibold cursor-default">
+                    👥 Users
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Right Side Data Board -->
+        <main class="flex-1 p-8">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="text-xl font-bold text-slate-800 mb-4">System Users Directory (API Roles & Filtered Plain Data)</h3>
+                
+                <!-- Loading State -->
+                <div id="loadingState" class="text-slate-500 font-semibold text-center my-4">
+                    Fetching records from live URL API...
+                </div>
+
+                <!-- Table Component -->
+                <div class="overflow-x-auto hidden" id="tableContainer">
+                    <table class="w-full text-left border-collapse">
+                        <thead id="userTableHead">
+                            <!-- Columns headers will be injected dynamically based on valid plain keys -->
+                        </thead>
+                        <tbody id="userTableBody">
+                            <!-- Dynamic plain data rows via fetch script -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 0. Set Avatar Initials on Load
+        if (storedUser) {
+            const userObj = JSON.parse(storedUser);
+            if (userObj.firstName) {
+                // First name ka pehla character nikal kar avatar mai lagana
+                document.getElementById('avatarBtn').innerText = userObj.firstName.charAt(0).toUpperCase();
+            }
+        }
+
+        // 1. Dropdown Menu Open/Close Logic
+        const avatarBtn = document.getElementById('avatarBtn');
+        const avatarDropdown = document.getElementById('avatarDropdown');
+        
+        avatarBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            avatarDropdown.classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', function() {
+            avatarDropdown.classList.add('hidden');
+        });
+
+        // 2. Logout Action (Fix: user delete nahi hoga, sirf logout hoga)
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            const storedUser = localStorage.getItem('registeredUser');
+            if (storedUser) {
+                const userObj = JSON.parse(storedUser);
+                userObj.isLoggedIn = false; // IsLoggedIn ko false kiya
+                localStorage.setItem('registeredUser', JSON.stringify(userObj)); // Save back to storage
+            }
+            window.location.href = 'index.html';
+        });
+
+        // 3. Dynamic API Fetching & Dynamic Object Filtering Logic
+        async function fetchLiveUsers() {
+            const apiURL = 'https://dummyjson.com/users';
+            const tableHead = document.getElementById("userTableHead");
+            const tableBody = document.getElementById("userTableBody");
+            const loadingState = document.getElementById("loadingState");
+            const tableContainer = document.getElementById("tableContainer");
+
+            try {
+                const response = await fetch(apiURL);
+                const data = await response.json();
+                const apiUsers = data.users;
+
+                if (apiUsers.length === 0) {
+                    loadingState.innerText = "No users found.";
+                    return;
+                }
+
+                const firstUser = apiUsers[0];
+                const validKeys = [];
+
+                for (let key in firstUser) {
+                    if (typeof firstUser[key] !== 'object' || firstUser[key] === null) {
+                        validKeys.push(key);
+                    }
+                }
+
+                let headHTML = `<tr class="bg-slate-50 border-b border-slate-200">`;
+                validKeys.forEach(key => {
+                    const columnName = key.charAt(0).toUpperCase() + key.slice(1);
+                    headHTML += `<th class="p-4 font-bold text-slate-700 text-sm whitespace-nowrap">${columnName}</th>`;
+                });
+                headHTML += `</tr>`;
+                tableHead.innerHTML = headHTML;
+
+                tableBody.innerHTML = '';
+                apiUsers.forEach(user => {
+                    let rowHTML = `<tr class="border-b border-slate-100 hover:bg-slate-50 transition">`;
+                    
+                    validKeys.forEach(key => {
+                        const cellValue = user[key] !== undefined && user[key] !== null ? user[key] : 'N/A';
+                        
+                        if (key === 'role') {
+                            rowHTML += `<td class="p-4 text-sm font-semibold text-blue-600 whitespace-nowrap capitalize">${cellValue}</td>`;
+                        } else {
+                            rowHTML += `<td class="p-4 text-slate-800 text-sm whitespace-nowrap">${cellValue}</td>`;
+                        }
+                    });
+
+                    rowHTML += `</tr>`;
+                    tableBody.innerHTML += rowHTML;
+                });
+
+                loadingState.classList.add('hidden');
+                tableContainer.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("API Error:", error);
+                loadingState.innerText = "Error loading filtered user rows from server.";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", fetchLiveUsers);
+    </script>
+</body>
+</html>

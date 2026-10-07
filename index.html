@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen">
+
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm">
+        <h2 class="text-2xl font-bold text-center mb-6 text-slate-800">Account Login</h2>
+        
+        <!-- Login Form -->
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Email</label>
+                <input type="email" id="loginEmail" required placeholder="name@company.com" class="w-full p-2.5 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Password</label>
+                <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full p-2.5 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white p-2.5 rounded-md font-bold hover:bg-blue-700 transition duration-200 cursor-pointer">Log In</button>
+        </form>
+        
+        <p class="text-sm text-center text-slate-600 mt-4">
+            Don't have an account? <a href="signup.html" class="text-blue-600 font-semibold hover:underline">Sign Up</a>
+        </p>
+    </div>
+
+    <script>
+        // Form submit logic
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault(); 
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            // Fetch current stored profile data
+            const storedUser = localStorage.getItem('registeredUser');
+
+            // 1. Check: If no user profile exists in storage at all
+            if (!storedUser) {
+                alert("No account found. Create your account first.");
+                return;
+            }
+
+            const userObj = JSON.parse(storedUser);
+
+            // 2. Check: If username input doesn't match the database record
+            if (userObj.email !== email) {
+                alert("No account found. Create your account first.");
+                return;
+            }
+
+            // 3. Check: If the email matches but the password string is invalid
+            if (userObj.password !== password) {
+                alert("Incorrect password");
+                return; 
+            }
+
+            // 4. Validation passed: Authorize and route user
+            userObj.isLoggedIn = true;
+            localStorage.setItem('registeredUser', JSON.stringify(userObj));
+
+            alert("Login successful!");
+            window.location.href = 'dashboard.html'; 
+        });
+    </script>
+
+</body>
+</html>
